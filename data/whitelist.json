@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "last_updated": "2023-03-07",
+  "total_entries": 3,
+  "entries": [
+    {
+      "name": "Uniswap",
+      "url": "https://uniswap.org",
+      "category": "DEX",
+      "verified": true,
+      "source": "defillama",
+      "last_updated": "2023-03-07"
+    },
+    {
+      "name": "Aave",
+      "url": "https://aave.com",
+      "category": "Lending",
+      "verified": true,
+      "source": "defillama",
+      "last_updated": "2023-03-07"
+    },
+    {
+      "name": "Compound",
+      "url": "https://compound.finance",
+      "category": "Lending",
+      "verified": true,
+      "source": "defillama",
+      "last_updated": "2023-03-07"
+    }
+  ]
+} 
