@@ -11,10 +11,9 @@
  * 
  * 使用方法：
  * 1. 打开 https://defillama.com/directory
- * 2. 确保展开所有"See more"按钮
- * 3. 打开浏览器控制台 (F12)
- * 4. 复制粘贴此脚本并执行
- * 5. 按照提示操作，完成数据提取
+ * 2. 打开浏览器控制台 (F12)
+ * 3. 复制粘贴此脚本并执行
+ * 4. 按照提示操作，完成数据提取
  */
 function extractDefILlamaProtocols() {
     console.log("开始提取DeFiLlama协议数据...");
@@ -32,123 +31,412 @@ function extractDefILlamaProtocols() {
         position: fixed;
         top: 10px;
         right: 10px;
-        background: rgba(0, 0, 0, 0.85);
+        background-color: rgba(0, 0, 0, 0.85);
         color: white;
-        padding: 18px;
+        padding: 15px;
         border-radius: 8px;
         z-index: 10000;
         font-family: Arial, sans-serif;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
-        max-width: 450px;
-        min-width: 350px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        min-width: 280px;
+        max-width: 350px;
+        transition: all 0.3s ease;
       `;
-      indicator.innerHTML = `
-        <div style="margin-bottom:12px;font-weight:bold;font-size:16px;border-bottom:1px solid #444;padding-bottom:8px;">DeFiLlama 协议提取器</div>
-        <div id="defi-extract-status" style="font-size:14px;margin-bottom:8px;">初始化...</div>
-        
-        <div style="margin-top:12px;margin-bottom:4px;font-size:13px;color:#aaa;">当前批次</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-          <div style="font-size:13px;">进度:</div>
-          <div id="defi-extract-batch-progress" style="font-size:13px;">0 / 0 (0%)</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-          <div style="font-size:13px;">成功率:</div>
-          <div id="defi-extract-batch-success" style="font-size:13px;">0 / 0 (0%)</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-          <div style="font-size:13px;">剩余时间:</div>
-          <div id="defi-extract-batch-remaining" style="font-size:13px;">计算中...</div>
-        </div>
-        
-        <div style="margin-top:12px;margin-bottom:4px;font-size:13px;color:#aaa;">总体进度</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-          <div style="font-size:13px;">进度:</div>
-          <div id="defi-extract-total-progress" style="font-size:13px;">0 / 0 (0%)</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-          <div style="font-size:13px;">成功率:</div>
-          <div id="defi-extract-total-success" style="font-size:13px;">0 / 0 (0%)</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-          <div style="font-size:13px;">已运行:</div>
-          <div id="defi-extract-time-elapsed" style="font-size:13px;">0分0秒</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:13px;">预计剩余:</div>
-          <div id="defi-extract-time-remaining" style="font-size:13px;">计算中...</div>
-        </div>
+      
+      // 添加标题
+      const title = document.createElement('div');
+      title.style = `
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       `;
+      title.textContent = 'DeFiLlama 数据提取器';
+      indicator.appendChild(title);
+      
       document.body.appendChild(indicator);
       
       // 开始计时
       const startTime = new Date();
+      let timeInterval = null;
       
-      // 更新时间显示的函数
-      const updateTime = () => {
-        const timeElem = document.getElementById('defi-extract-time-elapsed');
-        if (timeElem) {
+      // 返回控制对象
+      return {
+        // 更新状态文本
+        updateStatus: function(text) {
+          const statusElement = indicator.querySelector('.status-text');
+          if (statusElement) {
+            statusElement.textContent = text;
+          } else {
+            const div = document.createElement('div');
+            div.className = 'status-text';
+            div.style = `
+              font-weight: bold;
+              margin: 8px 0;
+              color: #4CAF50;
+            `;
+            div.textContent = text;
+            indicator.appendChild(div);
+          }
+        },
+        
+        // 更新展开进度
+        updateExpandProgress: function(current, total, status = '正在展开') {
+          // 清除时间间隔（如果存在）
+          if (timeInterval) {
+            clearInterval(timeInterval);
+            timeInterval = null;
+          }
+          
+          // 清空指示器内容，但保留标题
+          while (indicator.childNodes.length > 1) {
+            indicator.removeChild(indicator.lastChild);
+          }
+          
+          // 添加状态文本
+          const statusText = document.createElement('div');
+          statusText.className = 'status-text';
+          statusText.style = `
+            font-weight: bold;
+            margin: 8px 0;
+            color: #4CAF50;
+          `;
+          statusText.textContent = '展开"See more"按钮';
+          indicator.appendChild(statusText);
+          
+          // 添加子状态
+          const subStatus = document.createElement('div');
+          subStatus.style = 'margin-bottom: 8px; font-size: 14px;';
+          subStatus.textContent = status;
+          indicator.appendChild(subStatus);
+          
+          // 添加进度条
+          const progressBarContainer = document.createElement('div');
+          progressBarContainer.style = `
+            background: rgba(255, 255, 255, 0.1);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 8px 0;
+          `;
+          
+          const progressBar = document.createElement('div');
+          progressBar.style = `
+            background: #4CAF50;
+            height: 100%;
+            width: ${Math.round(current/Math.max(1, total)*100)}%;
+            transition: width 0.3s ease;
+          `;
+          
+          progressBarContainer.appendChild(progressBar);
+          indicator.appendChild(progressBarContainer);
+          
+          // 添加计数器
+          const counter = document.createElement('div');
+          counter.style = 'text-align: center; font-size: 13px; margin-top: 5px;';
+          counter.textContent = `${current}/${total}`;
+          indicator.appendChild(counter);
+        },
+        
+        // 初始化数据提取UI
+        initDataExtractionUI: function() {
+          // 清除时间间隔（如果存在）
+          if (timeInterval) {
+            clearInterval(timeInterval);
+          }
+          
+          // 清空指示器内容，但保留标题
+          while (indicator.childNodes.length > 1) {
+            indicator.removeChild(indicator.lastChild);
+          }
+          
+          // 添加状态文本
+          const statusText = document.createElement('div');
+          statusText.className = 'status-text';
+          statusText.style = `
+            font-weight: bold;
+            margin: 8px 0;
+            color: #2196F3;
+          `;
+          statusText.textContent = '初始化数据提取...';
+          indicator.appendChild(statusText);
+          
+          // 添加批次进度部分
+          const batchSection = document.createElement('div');
+          batchSection.style = 'margin-top: 12px;';
+          
+          const batchTitle = document.createElement('div');
+          batchTitle.style = 'font-size: 13px; color: #aaa; margin-bottom: 5px;';
+          batchTitle.textContent = '当前批次';
+          batchSection.appendChild(batchTitle);
+          
+          // 批次进度
+          const batchProgressRow = document.createElement('div');
+          batchProgressRow.style = 'display: flex; justify-content: space-between; margin-bottom: 3px;';
+          
+          const batchProgressLabel = document.createElement('div');
+          batchProgressLabel.style = 'font-size: 13px;';
+          batchProgressLabel.textContent = '进度:';
+          
+          const batchProgressValue = document.createElement('div');
+          batchProgressValue.className = 'batch-progress';
+          batchProgressValue.style = 'font-size: 13px;';
+          batchProgressValue.textContent = '0 / 0 (0%)';
+          
+          batchProgressRow.appendChild(batchProgressLabel);
+          batchProgressRow.appendChild(batchProgressValue);
+          batchSection.appendChild(batchProgressRow);
+          
+          // 批次成功率
+          const batchSuccessRow = document.createElement('div');
+          batchSuccessRow.style = 'display: flex; justify-content: space-between; margin-bottom: 3px;';
+          
+          const batchSuccessLabel = document.createElement('div');
+          batchSuccessLabel.style = 'font-size: 13px;';
+          batchSuccessLabel.textContent = '成功率:';
+          
+          const batchSuccessValue = document.createElement('div');
+          batchSuccessValue.className = 'batch-success';
+          batchSuccessValue.style = 'font-size: 13px;';
+          batchSuccessValue.textContent = '0 / 0 (0%)';
+          
+          batchSuccessRow.appendChild(batchSuccessLabel);
+          batchSuccessRow.appendChild(batchSuccessValue);
+          batchSection.appendChild(batchSuccessRow);
+          
+          // 批次剩余时间
+          const batchRemainingRow = document.createElement('div');
+          batchRemainingRow.style = 'display: flex; justify-content: space-between;';
+          
+          const batchRemainingLabel = document.createElement('div');
+          batchRemainingLabel.style = 'font-size: 13px;';
+          batchRemainingLabel.textContent = '剩余时间:';
+          
+          const batchRemainingValue = document.createElement('div');
+          batchRemainingValue.className = 'batch-remaining';
+          batchRemainingValue.style = 'font-size: 13px;';
+          batchRemainingValue.textContent = '计算中...';
+          
+          batchRemainingRow.appendChild(batchRemainingLabel);
+          batchRemainingRow.appendChild(batchRemainingValue);
+          batchSection.appendChild(batchRemainingRow);
+          
+          indicator.appendChild(batchSection);
+          
+          // 添加总体进度部分
+          const totalSection = document.createElement('div');
+          totalSection.style = 'margin-top: 15px;';
+          
+          const totalTitle = document.createElement('div');
+          totalTitle.style = 'font-size: 13px; color: #aaa; margin-bottom: 5px;';
+          totalTitle.textContent = '总体进度';
+          totalSection.appendChild(totalTitle);
+          
+          // 总体进度
+          const totalProgressRow = document.createElement('div');
+          totalProgressRow.style = 'display: flex; justify-content: space-between; margin-bottom: 3px;';
+          
+          const totalProgressLabel = document.createElement('div');
+          totalProgressLabel.style = 'font-size: 13px;';
+          totalProgressLabel.textContent = '进度:';
+          
+          const totalProgressValue = document.createElement('div');
+          totalProgressValue.className = 'total-progress';
+          totalProgressValue.style = 'font-size: 13px;';
+          totalProgressValue.textContent = '0 / 0 (0%)';
+          
+          totalProgressRow.appendChild(totalProgressLabel);
+          totalProgressRow.appendChild(totalProgressValue);
+          totalSection.appendChild(totalProgressRow);
+          
+          // 总体成功率
+          const totalSuccessRow = document.createElement('div');
+          totalSuccessRow.style = 'display: flex; justify-content: space-between; margin-bottom: 3px;';
+          
+          const totalSuccessLabel = document.createElement('div');
+          totalSuccessLabel.style = 'font-size: 13px;';
+          totalSuccessLabel.textContent = '成功率:';
+          
+          const totalSuccessValue = document.createElement('div');
+          totalSuccessValue.className = 'total-success';
+          totalSuccessValue.style = 'font-size: 13px;';
+          totalSuccessValue.textContent = '0 / 0 (0%)';
+          
+          totalSuccessRow.appendChild(totalSuccessLabel);
+          totalSuccessRow.appendChild(totalSuccessValue);
+          totalSection.appendChild(totalSuccessRow);
+          
+          // 已运行时间
+          const timeElapsedRow = document.createElement('div');
+          timeElapsedRow.style = 'display: flex; justify-content: space-between; margin-bottom: 3px;';
+          
+          const timeElapsedLabel = document.createElement('div');
+          timeElapsedLabel.style = 'font-size: 13px;';
+          timeElapsedLabel.textContent = '已运行:';
+          
+          const timeElapsedValue = document.createElement('div');
+          timeElapsedValue.className = 'time-elapsed';
+          timeElapsedValue.style = 'font-size: 13px;';
+          timeElapsedValue.textContent = '0分0秒';
+          
+          timeElapsedRow.appendChild(timeElapsedLabel);
+          timeElapsedRow.appendChild(timeElapsedValue);
+          totalSection.appendChild(timeElapsedRow);
+          
+          // 总体剩余时间
+          const totalRemainingRow = document.createElement('div');
+          totalRemainingRow.style = 'display: flex; justify-content: space-between;';
+          
+          const totalRemainingLabel = document.createElement('div');
+          totalRemainingLabel.style = 'font-size: 13px;';
+          totalRemainingLabel.textContent = '预计剩余:';
+          
+          const totalRemainingValue = document.createElement('div');
+          totalRemainingValue.className = 'total-remaining';
+          totalRemainingValue.style = 'font-size: 13px;';
+          totalRemainingValue.textContent = '计算中...';
+          
+          totalRemainingRow.appendChild(totalRemainingLabel);
+          totalRemainingRow.appendChild(totalRemainingValue);
+          totalSection.appendChild(totalRemainingRow);
+          
+          indicator.appendChild(totalSection);
+          
+          // 开始计时
+          timeInterval = setInterval(() => {
           const elapsed = Math.floor((new Date() - startTime) / 1000);
           const minutes = Math.floor(elapsed / 60);
           const seconds = elapsed % 60;
+            const timeElem = indicator.querySelector('.time-elapsed');
+            if (timeElem) {
           timeElem.textContent = `${minutes}分${seconds}秒`;
         }
-      };
-      
-      // 每秒更新一次时间
-      const timeInterval = setInterval(updateTime, 1000);
-      
-      return {
-        updateStatus: (message) => {
-          const statusElem = document.getElementById('defi-extract-status');
-          if (statusElem) {
-            statusElem.textContent = message;
+          }, 1000);
+        },
+        
+        // 更新批次进度
+        updateBatchProgress: function(current, total) {
+          const batchProgressElement = indicator.querySelector('.batch-progress');
+          if (batchProgressElement) {
+            batchProgressElement.textContent = `${current} / ${total} (${Math.round((current/Math.max(1, total))*100)}%)`;
           }
         },
-        updateBatchProgress: (current, total) => {
-          const elem = document.getElementById('defi-extract-batch-progress');
-          if (elem) {
-            const percent = total > 0 ? Math.floor((current / total) * 100) : 0;
-            elem.textContent = `${current} / ${total} (${percent}%)`;
+        
+        // 更新批次成功率
+        updateBatchSuccess: function(success, total) {
+          const batchSuccessElement = indicator.querySelector('.batch-success');
+          if (batchSuccessElement) {
+            batchSuccessElement.textContent = `${success} / ${total} (${Math.round((success/Math.max(1, total))*100)}%)`;
           }
         },
-        updateBatchSuccess: (success, total) => {
-          const elem = document.getElementById('defi-extract-batch-success');
-          if (elem) {
-            const percent = total > 0 ? Math.floor((success / total) * 100) : 0;
-            elem.textContent = `${success} / ${total} (${percent}%)`;
+        
+        // 更新批次剩余时间
+        updateBatchRemaining: function(time) {
+          const batchRemainingElement = indicator.querySelector('.batch-remaining');
+          if (batchRemainingElement) {
+            batchRemainingElement.textContent = time;
           }
         },
-        updateBatchRemaining: (time) => {
-          const elem = document.getElementById('defi-extract-batch-remaining');
-          if (elem) {
-            elem.textContent = time;
+        
+        // 更新总体进度
+        updateTotalProgress: function(current, total) {
+          const totalProgressElement = indicator.querySelector('.total-progress');
+          if (totalProgressElement) {
+            totalProgressElement.textContent = `${current} / ${total} (${Math.round((current/Math.max(1, total))*100)}%)`;
           }
         },
-        updateTotalProgress: (current, total) => {
-          const elem = document.getElementById('defi-extract-total-progress');
-          if (elem) {
-            const percent = total > 0 ? Math.floor((current / total) * 100) : 0;
-            elem.textContent = `${current} / ${total} (${percent}%)`;
+        
+        // 更新总体成功率
+        updateTotalSuccess: function(success, total) {
+          const totalSuccessElement = indicator.querySelector('.total-success');
+          if (totalSuccessElement) {
+            totalSuccessElement.textContent = `${success} / ${total} (${Math.round((success/Math.max(1, total))*100)}%)`;
           }
         },
-        updateTotalSuccess: (success, total) => {
-          const elem = document.getElementById('defi-extract-total-success');
-          if (elem) {
-            const percent = total > 0 ? Math.floor((success / total) * 100) : 0;
-            elem.textContent = `${success} / ${total} (${percent}%)`;
+        
+        // 更新总体剩余时间
+        updateTotalRemaining: function(time) {
+          const totalRemainingElement = indicator.querySelector('.total-remaining');
+          if (totalRemainingElement) {
+            totalRemainingElement.textContent = time;
           }
         },
-        updateTotalRemaining: (time) => {
-          const elem = document.getElementById('defi-extract-time-remaining');
-          if (elem) {
-            elem.textContent = time;
-          }
-        },
-        remove: () => {
+        
+        // 移除指示器
+        remove: function() {
+          if (timeInterval) {
           clearInterval(timeInterval);
+          }
           indicator.remove();
         }
       };
+    }
+    
+    // 自动展开所有"See more"按钮
+    async function expandAllSeeMore() {
+      return new Promise((resolve) => {
+        // 使用共享的进度指示器
+        const progress = showProgressIndicator();
+        
+        function getSeeMoreButtons() {
+          return Array.from(document.querySelectorAll('button')).filter(
+            btn => btn.textContent.includes('See more')
+          );
+        }
+        
+        let expandButtons = getSeeMoreButtons();
+        let expanded = 0;
+        let totalInitial = expandButtons.length;
+        
+        if (totalInitial === 0) {
+          progress.updateStatus("所有内容已展开");
+          setTimeout(() => {
+            resolve();
+          }, 1500);
+          return;
+        }
+        
+        // 询问用户是否要展开所有内容
+        const shouldExpand = confirm("是否自动展开所有'See more'按钮？这将确保获取完整数据。");
+        if (shouldExpand) {
+          progress.updateStatus("正在展开'See more'按钮...");
+          progress.updateExpandProgress(expanded, totalInitial);
+          
+          function clickNext() {
+            // 重新获取按钮，因为DOM可能已更新
+            expandButtons = getSeeMoreButtons();
+            
+            if (expandButtons.length > 0) {
+              expandButtons[0].click();
+              expanded++;
+              
+              // 更新总数（可能会增加）
+              const newTotal = Math.max(totalInitial, expanded + expandButtons.length);
+              totalInitial = newTotal;
+              
+              progress.updateExpandProgress(expanded, totalInitial);
+              setTimeout(clickNext, 800); // 增加延迟，避免过快请求
+            } else {
+              progress.updateExpandProgress(totalInitial, totalInitial, '所有内容已展开');
+              setTimeout(() => {
+                resolve();
+              }, 1500);
+            }
+          }
+          
+          clickNext();
+        } else {
+          // 用户选择不展开，直接进入下一阶段
+          progress.updateStatus("跳过展开'See more'按钮");
+          
+          // 重要：移除之前的指示器，创建新的指示器
+          progress.remove();
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        }
+      });
     }
     
     // 1. 找到协议列表容器
@@ -382,120 +670,117 @@ function extractDefILlamaProtocols() {
     // 5. 下载捕获的数据为CSV (修复版)
     function downloadCSV(data, prefix = '') {
       if (!data || data.length === 0) {
-        console.error("没有数据可下载");
-        return false;
+        console.log(" 没有数据可下载");
+        // 返回一个对象，表示下载状态
+        return {
+          success: false,
+          message: "没有数据可下载",
+          count: 0,
+          withUrlCount: 0,
+          percent: 0
+        };
       }
       
-      // 计算有效URL的统计
-      const withExternalUrl = data.filter(item => item.externalUrl).length;
-      const capturedPercent = Math.round((withExternalUrl / data.length) * 100);
-      
-      // 为CSV文件创建内容
-      const headers = ["Index", "Protocol Name", "Internal URL", "External URL", "URL Captured"];
+      // 准备CSV数据
+      const headers = ["name", "category", "url", "externalUrl", "source", "verified", "timestamp"];
       const csvContent = [
         headers.join(","),
         ...data.map(item => {
-          return `${item.index},"${item.name.replace(/"/g, '""')}","${item.internalUrl || ''}","${item.externalUrl || ''}","${item.captured ? 'Yes' : 'No'}"`;
+          return [
+            `"${(item.name || '').replace(/"/g, '""')}"`,
+            `"${(item.category || '').replace(/"/g, '""')}"`,
+            `"${(item.url || '').replace(/"/g, '""')}"`,
+            `"${(item.externalUrl || '').replace(/"/g, '""')}"`,
+            `"${(item.source || '').replace(/"/g, '""')}"`,
+            item.verified ? "true" : "false",
+            `"${item.timestamp || new Date().toISOString()}"`
+          ].join(",");
         })
       ].join("\n");
       
-      try {
-        // 创建用于下载的Blob
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      // 创建Blob和下载链接
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        
-        // 准备文件名
-        const dateStr = new Date().toISOString().slice(0,10);
-        const fileName = `defillama_protocols${prefix ? '_' + prefix : ''}_${dateStr}.csv`;
-        
-        // 修复方法1: 使用window.navigator.msSaveBlob (适用于IE10+)
-        if (window.navigator && window.navigator.msSaveBlob) {
-          window.navigator.msSaveBlob(blob, fileName);
-          console.log(`已使用msSaveBlob下载CSV文件: ${fileName}`);
-        } 
-        // 修复方法2: 直接创建iframe并设置data URL（更兼容的方法）
-        else {
-          const downloadIframe = document.createElement('iframe');
-          downloadIframe.style.display = 'none';
-          document.body.appendChild(downloadIframe);
-          
-          try {
-            // 在iframe中创建下载链接
-            const iframeDoc = downloadIframe.contentDocument || downloadIframe.contentWindow.document;
-            const link = iframeDoc.createElement('a');
-            link.href = url;
-            link.download = fileName;
-            link.textContent = 'Download CSV';
-            
-            iframeDoc.body.appendChild(link);
-            
-            // 尝试触发点击
-            link.click();
-            
-            // 延迟清理
-            setTimeout(() => {
-              URL.revokeObjectURL(url);
-              document.body.removeChild(downloadIframe);
-            }, 1000);
-            
-          } catch (iframeErr) {
-            console.warn("iframe下载方法失败，尝试备用方法:", iframeErr);
-            document.body.removeChild(downloadIframe);
-            
-            // 修复方法3: 传统A标签方法，但使用setTimeout确保URL不会被过早释放
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `defillama_protocols${prefix ? '_' + prefix : ''}_${timestamp}.csv`;
+      
+      try {
+        // 尝试打开新窗口下载
+        const newWindow = window.open();
+        if (newWindow) {
+          newWindow.document.write(`
+            <html>
+              <head>
+                <title>DeFiLlama协议数据下载</title>
+                <style>
+                  body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                  h1 { color: #333; }
+                  .info { margin: 20px 0; }
+                  .button { 
+                    display: inline-block; 
+                    background: #4CAF50; 
+                    color: white; 
+                    padding: 10px 20px; 
+                    text-decoration: none; 
+                    border-radius: 4px;
+                    margin-top: 20px;
+                  }
+                  .stats { 
+                    background: #f5f5f5; 
+                    padding: 15px; 
+                    border-radius: 4px; 
+                    margin: 20px 0;
+                  }
+                </style>
+              </head>
+              <body>
+                <h1>DeFiLlama协议数据下载</h1>
+                <div class="info">文件已准备好，点击下面的按钮下载：</div>
+                <div class="stats">
+                  <div>总记录数: ${data.length}</div>
+                  <div>有外部URL的记录数: ${data.filter(item => item.externalUrl).length}</div>
+                  <div>成功率: ${Math.round((data.filter(item => item.externalUrl).length / data.length) * 100)}%</div>
+                </div>
+                <a href="${url}" download="${filename}" class="button">下载CSV文件</a>
+              </body>
+            </html>
+          `);
+        } else {
+          // 如果无法打开新窗口，使用备用方法
             const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', fileName);
-            link.style.display = 'none';
+          link.href = url;
+          link.download = filename;
             document.body.appendChild(link);
             
-            // 使用setTimeout确保下载事件在之前的所有事件完成后被处理
             setTimeout(() => {
-              // 尝试直接click()
               link.click();
-              // 还添加一个备用的鼠标事件
-              const clickEvent = new MouseEvent('click');
-              link.dispatchEvent(clickEvent);
-              
-              // 清理，但给浏览器足够时间处理下载
               setTimeout(() => {
-                URL.revokeObjectURL(url);
                 document.body.removeChild(link);
-              }, 2000);
+              URL.revokeObjectURL(url);
+            }, 1000);
             }, 100);
-          }
         }
         
-        // 打印成功信息
-        console.log(`已创建CSV文件，包含 ${data.length} 条记录，其中 ${withExternalUrl} 条 (${capturedPercent}%) 有外部URL`);
+        // 统计有效URL
+        const withUrl = data.filter(item => item.externalUrl).length;
+        const percent = Math.round((withUrl / data.length) * 100);
+        
+        console.log(`已导出CSV文件，包含 ${data.length} 条记录，其中 ${withUrl} 条 (${percent}%) 有外部URL`);
         return {
-          total: data.length,
-          withUrl: withExternalUrl,
-          percent: capturedPercent,
-          fileName: fileName
+          success: true,
+          message: "数据已下载",
+          count: data.length,
+          withUrlCount: withUrl,
+          percent: percent
         };
-      } catch (error) {
-        console.error("下载CSV时出错:", error);
-        
-        // 错误时的备用方案：尝试将数据复制到剪贴板
-        try {
-          const textArea = document.createElement('textarea');
-          textArea.value = csvContent;
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-          console.log("已将CSV内容复制到剪贴板，请手动保存。");
-          alert("无法自动下载CSV文件，但内容已复制到剪贴板。请创建一个.csv文件并粘贴内容。");
-        } catch (clipboardErr) {
-          console.error("复制到剪贴板失败:", clipboardErr);
-        }
-        
+      } catch (e) {
+        console.error("导出数据失败:", e);
         return {
-          total: data.length,
-          withUrl: withExternalUrl,
-          percent: capturedPercent,
-          error: error.message
+          success: false,
+          message: "导出数据失败: " + e.message,
+          count: data.length,
+          withUrlCount: data.filter(item => item.externalUrl).length,
+          percent: Math.round((data.filter(item => item.externalUrl).length / data.length) * 100)
         };
       }
     }
@@ -640,9 +925,22 @@ function extractDefILlamaProtocols() {
         const batchData = protocols.slice(0, endIndex);
         const batchDownloadResult = downloadCSV(batchData, `batch${batchNum}`);
         
+        // 询问用户是否保存到localStorage
+        let saveToLocalStorage = false;
+        if (batchNum === 1) { // 只在第一批次询问
+          saveToLocalStorage = confirm(
+            `是否将数据保存到浏览器的localStorage中？\n\n` +
+            `• 点击"确定"：保存数据，以便稍后导出\n` +
+            `• 点击"取消"：不保存数据`
+          );
+        }
+        
+        // 如果用户选择保存，则保存到localStorage
+        if (saveToLocalStorage) {
         // 也保存到localStorage
         const batchKey = `defiLlamaProtocols_batch${batchNum}`;
         saveDataToLocalStorage(batchData, batchKey);
+        }
         
         // 如果是第一批次，询问用户是否继续
         if (batchNum === 1 && startIndex + batchSize < totalToProcess && userConfirmedAll) {
@@ -671,6 +969,12 @@ function extractDefILlamaProtocols() {
       const executionTimeMinutes = Math.floor(executionTimeSeconds / 60);
       const executionTimeRemainingSeconds = Math.floor(executionTimeSeconds % 60);
       
+      // 显示完成信息
+      progress.updateStatus("数据提取完成！");
+      
+      // 设置自动关闭指示器的延迟
+      setTimeout(() => progress.remove(), 10000); // 10秒后自动关闭
+      
       // 返回最终结果
       return {
         processedTotal: globalStats.processedTotal,
@@ -685,7 +989,7 @@ function extractDefILlamaProtocols() {
     // 8. 主执行流程
     async function main() {
       // 显示进度指示器
-      const progress = showProgressIndicator();
+      let progress = showProgressIndicator();
       let result = {
         success: false,
         message: "未完成",
@@ -693,12 +997,22 @@ function extractDefILlamaProtocols() {
       };
       
       try {
+        // 自动展开所有"See more"按钮
+        progress.updateStatus("准备展开'See more'按钮...");
+        await expandAllSeeMore();
+        
+        // 重新创建进度指示器（因为如果用户选择不展开，之前的指示器已被移除）
+        progress = showProgressIndicator();
+        
+        // 初始化数据提取UI
+        progress.initDataExtractionUI();
+        
         // 查找容器
         progress.updateStatus("查找协议容器...");
         const container = findProtocolContainer();
         if (!container) {
           progress.updateStatus("未找到协议容器。请确保页面已加载完成。");
-          setTimeout(() => progress.remove(), 3000);
+          setTimeout(() => progress.remove(), 5000); // 5秒后自动关闭
           result.message = "未找到协议容器";
           return result;
         }
@@ -708,81 +1022,170 @@ function extractDefILlamaProtocols() {
         const options = extractProtocolOptions(container);
         if (options.length === 0) {
           progress.updateStatus("未找到协议选项。请确保已展开所有'See more'按钮。");
-          setTimeout(() => progress.remove(), 3000);
+          setTimeout(() => progress.remove(), 5000); // 5秒后自动关闭
           result.message = "未找到协议选项";
           return result;
         }
         
-        // 提取基本数据
-        progress.updateStatus("处理协议数据...");
-        let protocols = extractDataFromOptions(options);
-        console.log(`提取到 ${protocols.length} 个唯一协议`);
+        console.log(`找到 ${options.length} 个协议选项`);
         
-        // 验证
-        if (protocols.length > 0) {
-          console.log(`第一个协议: ${protocols[0].name}`);
-          console.log(`最后一个协议: ${protocols[protocols.length - 1].name}`);
+        // 提取数据
+        progress.updateStatus("提取协议数据...");
+        const protocols = extractDataFromOptions(options);
+        
+        // 检查是否有协议数据
+        if (protocols.length === 0) {
+          progress.updateStatus("未提取到任何协议数据。");
+          setTimeout(() => progress.remove(), 5000); // 5秒后自动关闭
+          result.message = "未提取到协议数据";
+          return result;
         }
         
-        // 分批处理并保存
-        const processingResult = await processInBatches(protocols, progress);
+        console.log(`提取到 ${protocols.length} 个唯一协议`);
         
-        // 下载完整数据
-        progress.updateStatus("准备下载完整数据...");
-        const downloadResult = downloadCSV(protocols, 'complete');
+        // 询问用户是否要获取所有协议的外部URL
+        const totalProtocols = protocols.length;
+        const batchSize = 50; // 每批处理的数量
         
-        // 保存到localStorage
-        progress.updateStatus("保存数据到本地存储...");
-        const storageResult = saveDataToLocalStorage(protocols, 'defiLlamaProtocolData_complete');
-        
-        // 更新最终状态
-        progress.updateStatus(`完成! 处理了 ${processingResult.processedTotal} 个协议，捕获了 ${processingResult.capturedTotal} 个URL`);
-        
-        // 在控制台显示统计信息
-        console.log("=== DeFiLlama URL提取完成 ===");
-        console.log(`总协议数: ${protocols.length}`);
-        console.log(`处理数量: ${processingResult.processedTotal}`);
-        console.log(`成功捕获URL: ${processingResult.capturedTotal} (${processingResult.successRate}%)`);
-        console.log(`失败数量: ${processingResult.failedTotal}`);
-        console.log(`执行时间: ${processingResult.executionTime}`);
-        console.log(`CSV文件已下载，包含 ${downloadResult.total} 条记录，其中 ${downloadResult.withUrl} 条有外部URL (${downloadResult.percent}%)`);
-        
-        // 完成
-        setTimeout(() => progress.remove(), 10000);
-        
-        // 更新结果
-        result = {
-          success: true,
-          message: "提取完成",
-          stats: {
-            total: protocols.length,
-            processed: processingResult.processedTotal,
-            captured: processingResult.capturedTotal,
-            failed: processingResult.failedTotal,
-            successRate: processingResult.successRate,
-            executionTime: processingResult.executionTime,
-            csvStats: downloadResult
-          }
+        // 全局统计
+        const globalStats = {
+          processedTotal: 0,
+          capturedTotal: 0,
+          failedTotal: 0
         };
         
+        // 记录开始时间
+        const startTime = new Date();
+        
+        // 询问用户是否处理所有协议
+        const userConfirmedAll = totalProtocols > 200 && confirm(
+          `DeFiLlama URL提取器 - 找到 ${totalProtocols} 个协议\n\n` +
+          `• 点击"确定"：获取所有协议的外部URL（分批处理，只在第一批后需确认）\n` +
+          `• 点击"取消"：仅获取前200个协议的URL`
+        );
+        
+        // 确定要处理的总数量
+        const totalToProcess = userConfirmedAll ? totalProtocols : Math.min(200, totalProtocols);
+        
+        // 如果没有要处理的协议，提前结束
+        if (totalToProcess === 0) {
+          progress.updateStatus("没有协议需要处理。");
+          setTimeout(() => progress.remove(), 5000); // 5秒后自动关闭
+          result.message = "没有协议需要处理";
+          result.success = true;
+          return result;
+        }
+        
+        // 初始化全局统计显示
+        progress.updateTotalProgress(0, totalToProcess);
+        progress.updateTotalSuccess(0, 0);
+        progress.updateTotalRemaining("计算中...");
+        
+        let continueProcessing = true; // 控制是否继续处理
+        
+        // 分批处理
+        for (let startIndex = 0; startIndex < totalToProcess && continueProcessing; startIndex += batchSize) {
+          const batchNum = Math.floor(startIndex / batchSize) + 1;
+          const endIndex = Math.min(startIndex + batchSize, totalToProcess);
+          
+          progress.updateStatus(`处理第${batchNum}批 (${startIndex+1}-${endIndex})...`);
+          
+          // 初始化批次统计显示
+          progress.updateBatchProgress(0, endIndex - startIndex);
+          progress.updateBatchSuccess(0, 0);
+          progress.updateBatchRemaining("计算中...");
+          
+          // 处理当前批次
+          const batchResult = await batchCaptureExternalUrls(protocols, progress, {
+            startIndex,
+            batchSize: endIndex - startIndex,
+            pauseInterval: 10, // 每10个暂停一次
+            pauseDuration: 1000, // 暂停1秒
+            captureTimeout: 300 // 等待URL捕获的超时时间
+          }, globalStats);
+          
+          // 累计统计
+          globalStats.processedTotal += batchResult.processedCount;
+          globalStats.capturedTotal += batchResult.capturedUrlCount;
+          globalStats.failedTotal += batchResult.failedCount;
+          
+          // 更新总体统计显示
+          progress.updateTotalProgress(globalStats.processedTotal, totalToProcess);
+          progress.updateTotalSuccess(globalStats.capturedTotal, globalStats.processedTotal);
+          
+          // 每批次下载一次CSV - 处理当前批次数据
+          progress.updateStatus(`批次${batchNum}完成，正在下载数据...`);
+          const batchData = protocols.slice(0, endIndex);
+          const batchDownloadResult = downloadCSV(batchData, `batch${batchNum}`);
+          
+          // 询问用户是否保存到localStorage
+          let saveToLocalStorage = false;
+          if (batchNum === 1) { // 只在第一批次询问
+            saveToLocalStorage = confirm(
+              `是否将数据保存到浏览器的localStorage中？\n\n` +
+              `• 点击"确定"：保存数据，以便稍后导出\n` +
+              `• 点击"取消"：不保存数据`
+            );
+          }
+          
+          // 如果用户选择保存，则保存到localStorage
+          if (saveToLocalStorage) {
+            // 也保存到localStorage
+            const batchKey = `defiLlamaProtocols_batch${batchNum}`;
+            saveDataToLocalStorage(batchData, batchKey);
+          }
+          
+          // 如果是第一批次，询问用户是否继续
+          if (batchNum === 1 && startIndex + batchSize < totalToProcess && userConfirmedAll) {
+            const shouldContinue = confirm(
+              `DeFiLlama URL提取器 - 第1批完成\n\n` +
+              `已处理 ${endIndex}/${totalToProcess} 个协议。\n` +
+              `成功获取 ${globalStats.capturedTotal} 个外部URL (${Math.round(globalStats.capturedTotal/globalStats.processedTotal*100)}%)。\n\n` +
+              `• 点击"确定"：自动处理剩余全部协议（无需再次确认）\n` +
+              `• 点击"取消"：停止并使用当前结果`
+            );
+            
+            if (!shouldContinue) {
+              console.log(`用户选择停止于第${batchNum}批`);
+              continueProcessing = false;
+              
+              // 用户选择停止时，确保下载当前已处理的数据
+              progress.updateStatus(`用户选择停止，正在下载已处理数据...`);
+              downloadCSV(batchData, `stopped_at_batch${batchNum}`);
+            }
+          }
+        }
+        
+        // 计算总执行时间
+        const endTime = new Date();
+        const executionTimeSeconds = (endTime - startTime) / 1000;
+        const executionTimeMinutes = Math.floor(executionTimeSeconds / 60);
+        const executionTimeRemainingSeconds = Math.floor(executionTimeSeconds % 60);
+        
+        // 显示完成信息
+        progress.updateStatus("数据提取完成！");
+        
+        // 设置自动关闭指示器的延迟
+        setTimeout(() => progress.remove(), 10000); // 10秒后自动关闭
+        
+        // 返回最终结果
+        result.success = true;
+        result.message = "提取完成";
+        result.stats = {
+          processedTotal: globalStats.processedTotal,
+          capturedTotal: globalStats.capturedTotal,
+          failedTotal: globalStats.failedTotal,
+          successRate: Math.round((globalStats.capturedTotal / Math.max(1, globalStats.processedTotal)) * 100),
+          executionTime: `${executionTimeMinutes}分${executionTimeRemainingSeconds}秒`,
+          executionTimeSeconds
+        };
         return result;
       } catch (error) {
         console.error("执行过程中出错:", error);
-        progress.updateStatus(`错误: ${error.message}`);
+        progress.updateStatus(`执行出错: ${error.message}`);
         
-        // 发生错误时，尝试保存当前数据
-        try {
-          if (protocols && protocols.length > 0) {
-            progress.updateStatus(`正在保存已收集的数据...`);
-            downloadCSV(protocols, 'error_recovery');
-            saveDataToLocalStorage(protocols, 'defiLlamaProtocolData_error_recovery');
-            console.log(`已保存错误恢复数据，包含 ${protocols.length} 条记录`);
-          }
-        } catch (saveError) {
-          console.error("保存错误恢复数据失败:", saveError);
-        }
-        
-        setTimeout(() => progress.remove(), 5000);
+        // 设置自动关闭指示器的延迟
+        setTimeout(() => progress.remove(), 8000); // 8秒后自动关闭
         
         result.message = `执行出错: ${error.message}`;
         return result;
@@ -1067,13 +1470,36 @@ function extractDefILlamaProtocols() {
   console.log("1. listSavedDefiLlamaData() - 查看所有保存的数据");
   console.log("2. exportSavedDefiLlamaData('键名') - 导出指定数据");
   console.log("3. exportLatestDefiLlamaData() - 导出最新批次数据");
-  extractDefILlamaProtocols().then(result => {
+
+  // 添加一个函数来显示执行结果
+  function displayExecutionResults(result) {
+    console.log("\n=== DeFiLlama URL提取完成 ===");
+    
     if (result.success) {
-      console.log(`脚本执行成功: ${result.message}`);
+      console.log(`✅ 状态: 成功 - ${result.message}`);
+      
       if (result.stats) {
-        console.table(result.stats);
+        console.log("\n📊 统计信息:");
+        console.log(`• 处理协议数: ${result.stats.processedTotal || 0}`);
+        console.log(`• 成功捕获URL: ${result.stats.capturedTotal || 0} (${result.stats.successRate || 0}%)`);
+        console.log(`• 失败数量: ${result.stats.failedTotal || 0}`);
+        console.log(`• 执行时间: ${result.stats.executionTime || '0分0秒'}`);
       }
+      
+      console.log("\n💡 提示:");
+      console.log("• 如需再次查看数据，可使用 exportLatestDefiLlamaData() 函数");
+      console.log("• 如需查看所有保存的数据，可使用 listSavedDefiLlamaData() 函数");
     } else {
-      console.error(`脚本执行失败: ${result.message}`);
+      console.log(`❌ 状态: 失败 - ${result.message}`);
+      console.log("\n💡 建议:");
+      console.log("• 请确保页面已完全加载");
+      console.log("• 尝试刷新页面后重新运行脚本");
+      console.log("• 检查浏览器控制台是否有错误信息");
     }
+    
+    console.log("\n感谢使用 DeFiLlama URL提取器！");
+  }
+
+  extractDefILlamaProtocols().then(result => {
+    displayExecutionResults(result);
   });
