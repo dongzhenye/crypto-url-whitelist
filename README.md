@@ -136,6 +136,10 @@ crypto-url-whitelist/
 本项目的代码采用 MIT 许可证 - 详情请参见 [LICENSE](LICENSE) 文件。
 示例数据仅供参考，使用时请遵守原始数据源的使用条款。
 
+## 个人声明
+
+本项目是个人开源项目，完全独立，不隶属于任何特定组织或公司。所有贡献和观点仅代表个人立场。
+
 ## 联系方式
 
 项目维护者：[Zhenye Dong](https://github.com/dongzhenye)
