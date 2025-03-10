@@ -1,0 +1,15 @@
+# 设置默认行为
+* text=auto
+
+# 确保所有文本文件在仓库中使用LF
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
+
+# 确保脚本文件使用LF
+*.sh text eol=lf
+
+# Windows特定文件使用CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
